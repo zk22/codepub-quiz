@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { Option, Question } from "../components";
+import { Option, Question, Result } from "../components";
 import { BASE_URL } from "../constants";
 
 export const Quiz = () => {
@@ -9,6 +9,8 @@ export const Quiz = () => {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState("");
   const [correctOptionId, setCorrectOptionId] = useState("");
+  const [isFinished, setIsFinished] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
 
   useEffect(() => {
     const getQuiz = async () => {
@@ -32,6 +34,10 @@ export const Quiz = () => {
     ).then((response) => response.json());
 
     setCorrectOptionId(response.correctOption);
+
+    if (optionId === response.correctOption) {
+      setCorrectCount(correctCount + 1);
+    }
   };
 
   const next = () => {
@@ -41,6 +47,14 @@ export const Quiz = () => {
       setCorrectOptionId("");
     }
   };
+
+  const finish = () => {
+    setIsFinished(true);
+  };
+
+  if (isFinished) {
+    return <Result correct={correctCount} total={questions.length} />;
+  }
 
   const selectedQuestion = questions[selectedQuestionIndex];
   if (!selectedQuestion) {
@@ -65,9 +79,13 @@ export const Quiz = () => {
           );
         })}
       </Question>
-      {selectedQuestionIndex < questions.length - 1 && (
+      {selectedQuestionIndex < questions.length - 1 ? (
         <button onClick={next} disabled={!selectedOptionId}>
           Next
+        </button>
+      ) : (
+        <button onClick={finish} disabled={!selectedOptionId}>
+          Finish
         </button>
       )}
     </div>
