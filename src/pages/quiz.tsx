@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
+import { Option, Question } from "../components";
 import { BASE_URL } from "../constants";
 
 export const Quiz = () => {
   const { id } = useParams();
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
   useEffect(() => {
     const getQuiz = async () => {
@@ -20,5 +22,27 @@ export const Quiz = () => {
     getQuiz();
   }, []);
 
-  return <div>QUIZ</div>;
+  const selectedQuestion = questions[selectedQuestionIndex];
+  if (!selectedQuestion) {
+    return;
+  }
+
+  return (
+    <div className="p-4 w-full md:w-96 m-auto">
+      <Question
+        key={selectedQuestion.id}
+        id={selectedQuestion.id}
+        label={selectedQuestion.label}
+        onSelectOption={() => {}}
+      >
+        {selectedQuestion.options.map((option) => {
+          return (
+            <Option key={option.id} id={option.id}>
+              {option.label}
+            </Option>
+          );
+        })}
+      </Question>
+    </div>
+  );
 };
