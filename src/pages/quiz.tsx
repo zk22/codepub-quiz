@@ -8,6 +8,7 @@ export const Quiz = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState("");
+  const [correctOptionId, setCorrectOptionId] = useState("");
 
   useEffect(() => {
     const getQuiz = async () => {
@@ -25,6 +26,12 @@ export const Quiz = () => {
 
   const onSelectOption = async (questionId: string, optionId: string) => {
     setSelectedOptionId(optionId);
+
+    const response = await fetch(
+      `${BASE_URL}/quiz/${id}/question/${questionId}`
+    ).then((response) => response.json());
+
+    setCorrectOptionId(response.correctOption);
   };
 
   const selectedQuestion = questions[selectedQuestionIndex];
@@ -39,6 +46,7 @@ export const Quiz = () => {
         id={selectedQuestion.id}
         label={selectedQuestion.label}
         selectedOption={selectedOptionId}
+        correctOption={correctOptionId}
         onSelectOption={onSelectOption}
       >
         {selectedQuestion.options.map((option) => {
