@@ -34,6 +34,14 @@ export const Quiz = () => {
     setCorrectOptionId(response.correctOption);
   };
 
+  const next = () => {
+    if (selectedQuestionIndex < questions.length - 1) {
+      setSelectedQuestionIndex(selectedQuestionIndex + 1);
+      setSelectedOptionId("");
+      setCorrectOptionId("");
+    }
+  };
+
   const selectedQuestion = questions[selectedQuestionIndex];
   if (!selectedQuestion) {
     return;
@@ -57,6 +65,11 @@ export const Quiz = () => {
           );
         })}
       </Question>
+      {selectedQuestionIndex < questions.length - 1 && (
+        <button onClick={next} disabled={!selectedOptionId}>
+          Next
+        </button>
+      )}
     </div>
   );
 };
