@@ -7,6 +7,7 @@ export const Quiz = () => {
   const { id } = useParams();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+  const [selectedOptionId, setSelectedOptionId] = useState("");
 
   useEffect(() => {
     const getQuiz = async () => {
@@ -22,6 +23,10 @@ export const Quiz = () => {
     getQuiz();
   }, []);
 
+  const onSelectOption = async (questionId: string, optionId: string) => {
+    setSelectedOptionId(optionId);
+  };
+
   const selectedQuestion = questions[selectedQuestionIndex];
   if (!selectedQuestion) {
     return;
@@ -33,7 +38,8 @@ export const Quiz = () => {
         key={selectedQuestion.id}
         id={selectedQuestion.id}
         label={selectedQuestion.label}
-        onSelectOption={() => {}}
+        selectedOption={selectedOptionId}
+        onSelectOption={onSelectOption}
       >
         {selectedQuestion.options.map((option) => {
           return (
