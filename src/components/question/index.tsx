@@ -1,6 +1,6 @@
 import React from "react";
 import get from "lodash.get";
-import { Option, OptionProps } from "./option";
+import { Option, OptionProps } from "../option";
 
 interface QuestionProps {
   id: string;

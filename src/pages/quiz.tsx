@@ -1,93 +1,145 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
-import { Option, Question, Result } from "../components";
-import { BASE_URL } from "../constants";
+import { useNavigate, useParams } from "react-router";
+import { Button, Option, Question, Result, Steps } from "../components";
+import { fetch } from "../network";
+import useStore from "../store";
 
 export const Quiz = () => {
+  const navigate = useNavigate();
   const { id } = useParams();
+  const { info, setInfo } = useStore();
+
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState("");
   const [correctOptionId, setCorrectOptionId] = useState("");
-  const [isFinished, setIsFinished] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const getQuiz = async () => {
-      const response = await fetch(`${BASE_URL}/quiz/${id}`).then((response) =>
-        response.json()
-      );
-
+      const response = await fetch("GET", `/quiz/${id}`);
       setQuestions(response.questions);
-
-      console.log(response.questions);
     };
 
-    getQuiz();
+    if (!info?.userId) {
+      navigate(`/`);
+    } else {
+      getQuiz();
+    }
   }, []);
 
   const onSelectOption = async (questionId: string, optionId: string) => {
-    setSelectedOptionId(optionId);
+    try {
+      setError("");
+      setLoading(true);
+      setSelectedOptionId(optionId);
 
-    const response = await fetch(
-      `${BASE_URL}/quiz/${id}/question/${questionId}`
-    ).then((response) => response.json());
+      const response = await fetch("POST", "/answer", {
+        data: {
+          quizId: id,
+          userId: info.userId,
+          questionId,
+          selectedOption: optionId,
+        },
+      });
 
-    setCorrectOptionId(response.correctOption);
-
-    if (optionId === response.correctOption) {
-      setCorrectCount(correctCount + 1);
+      setLoading(false);
+      setCorrectOptionId(response.correctOption);
+    } catch (err: any) {
+      setLoading(false);
+      setError(err?.response?.data?.message || err?.message);
     }
   };
 
   const next = () => {
-    if (selectedQuestionIndex < questions.length - 1) {
-      setSelectedQuestionIndex(selectedQuestionIndex + 1);
+    if (info.selectedQuestionIndex < questions.length - 1) {
+      setInfo({
+        ...info,
+        selectedQuestionIndex: info.selectedQuestionIndex + 1,
+      });
       setSelectedOptionId("");
       setCorrectOptionId("");
+      setError("");
     }
   };
 
-  const finish = () => {
-    setIsFinished(true);
+  const finish = async () => {
+    try {
+      setError("");
+      setLoading(true);
+      const response = await fetch("POST", "/finish", {
+        data: { quizId: id, userId: info.userId },
+      });
+
+      setInfo({
+        ...info,
+        isFinished: true,
+        correctCount: response.correctCount,
+        duration: response.duration,
+        totalCount: questions.length,
+      });
+      setLoading(false);
+    } catch (err: any) {
+      setLoading(false);
+      setError(err?.response?.data?.message || err?.message);
+    }
   };
 
-  if (isFinished) {
-    return <Result correct={correctCount} total={questions.length} />;
+  if (info?.isFinished) {
+    return (
+      <Result
+        correct={info?.correctCount || 0}
+        total={info?.totalCount || 0}
+        duration={info?.duration || 0}
+        userId={info?.userId}
+      />
+    );
   }
 
-  const selectedQuestion = questions[selectedQuestionIndex];
+  const selectedQuestion = questions[info.selectedQuestionIndex];
   if (!selectedQuestion) {
-    return;
+    return <></>;
   }
 
   return (
-    <div className="p-4 w-full md:w-96 m-auto">
-      <Question
-        key={selectedQuestion.id}
-        id={selectedQuestion.id}
-        label={selectedQuestion.label}
-        selectedOption={selectedOptionId}
-        correctOption={correctOptionId}
-        onSelectOption={onSelectOption}
-      >
-        {selectedQuestion.options.map((option) => {
-          return (
-            <Option key={option.id} id={option.id}>
-              {option.label}
-            </Option>
-          );
-        })}
-      </Question>
-      {selectedQuestionIndex < questions.length - 1 ? (
-        <button onClick={next} disabled={!selectedOptionId}>
-          Next
-        </button>
-      ) : (
-        <button onClick={finish} disabled={!selectedOptionId}>
-          Finish
-        </button>
-      )}
-    </div>
+    <>
+      <Steps current={info?.selectedQuestionIndex} total={questions.length} />
+      <div className="p-4 w-full md:w-96 m-auto mt-32">
+        <Question
+          key={selectedQuestion.id}
+          id={selectedQuestion.id}
+          label={selectedQuestion.label}
+          selectedOption={selectedOptionId}
+          correctOption={correctOptionId}
+          onSelectOption={onSelectOption}
+        >
+          {selectedQuestion.options.map((option) => {
+            return (
+              <Option key={option.id} id={option.id}>
+                {option.label}
+              </Option>
+            );
+          })}
+        </Question>
+        {info.selectedQuestionIndex < questions.length - 1 ? (
+          <Button
+            onClick={next}
+            disabled={!selectedOptionId || loading}
+            loading={loading}
+          >
+            Next
+          </Button>
+        ) : (
+          <Button
+            onClick={finish}
+            disabled={!selectedOptionId || loading}
+            loading={loading}
+          >
+            Finish
+          </Button>
+        )}
+        {error && <div className="text-sm text-red-500 my-4">{error}</div>}
+      </div>
+    </>
   );
 };
